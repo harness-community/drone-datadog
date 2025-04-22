@@ -108,6 +108,7 @@ func TestPrintVersion(t *testing.T) {
 
 func TestParseConfig(t *testing.T) {
 	// no dry run and no api key should raise an error
+	os.Setenv("PLUGIN_API_KEY", "")
 	os.Setenv("PLUGIN_DRY_RUN", "false")
 	if _, err := parseConfig(); err == nil {
 		t.Fatalf("parseConfig should raise an error")
