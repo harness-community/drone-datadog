@@ -115,6 +115,11 @@ var pipelineVisibilityEnvConfigs = map[string]EnvConfig{
 		DefaultValue: "cipipeline_resource_request",
 		IsRequired:   false,
 	},
+	"provider_name": {
+		EnvNames:     []string{""},
+		DefaultValue: "harness",
+		IsRequired:   true,
+	},
 }
 
 func getPipelineVisibilityEnvValue(env string) string {
@@ -160,10 +165,42 @@ func ValidateRequiredEnvVars() error {
 	return nil
 }
 
+func mapStatus(status string) string {
+	status = strings.ToLower(status)
+	switch status {
+	case "success":
+		return "success"
+	case "failure", "error":
+		return "error"
+	case "aborted", "canceled":
+		return "canceled"
+	default:
+		return status
+	}
+}
+
 func SendDatadogPipelineEvent(cfg *Config) error {
+
+	tag := getPipelineVisibilityEnvValue("git_tag")
+	branch := getPipelineVisibilityEnvValue("git_branch")
+
+	gitInfo := map[string]interface{}{
+		"repository_url": getPipelineVisibilityEnvValue("git_repository_url"),
+		"sha":            getPipelineVisibilityEnvValue("git_commit_sha"),
+		"author_email":   getPipelineVisibilityEnvValue("git_author_email"),
+		"author_name":    getPipelineVisibilityEnvValue("git_author_name"),
+	}
+
+	if tag != "" {
+		gitInfo["tag"] = tag
+	} else if branch != "" {
+		gitInfo["branch"] = branch
+	}
+
 	requestBody := map[string]interface{}{
 		"data": map[string]interface{}{
 			"attributes": map[string]interface{}{
+				"provider_name": getPipelineVisibilityEnvValue("provider_name"),
 				"resource": map[string]interface{}{
 					"level":         getPipelineVisibilityEnvValue("pipeline_level"),
 					"unique_id":     getPipelineVisibilityEnvValue("pipeline_unique_id"),
@@ -171,15 +208,10 @@ func SendDatadogPipelineEvent(cfg *Config) error {
 					"url":           getPipelineVisibilityEnvValue("pipeline_url"),
 					"start":         ConvertUnixToRFC3339(parseUnix(getPipelineVisibilityEnvValue("pipeline_start"))),
 					"end":           ConvertUnixToRFC3339(parseUnix(getPipelineVisibilityEnvValue("pipeline_end"))),
-					"status":        strings.ToLower(getPipelineVisibilityEnvValue("pipeline_status")),
+					"status":        mapStatus(getPipelineVisibilityEnvValue("pipeline_status")),
 					"partial_retry": false,
-					"is_manual":     getPipelineVisibilityEnvValue("pipeline_is_manual") == "manual",
-					"git": map[string]interface{}{
-						"repository_url": getPipelineVisibilityEnvValue("git_repository_url"),
-						"sha":            getPipelineVisibilityEnvValue("git_commit_sha"),
-						"author_email":   getPipelineVisibilityEnvValue("git_author_email"),
-						"author_name":    getPipelineVisibilityEnvValue("git_author_name"),
-					},
+					"is_manual":     getPipelineVisibilityEnvValue("pipeline_is_manual") != "webhook",
+					"git":           gitInfo,
 					"node": map[string]interface{}{
 						"hostname":  getPipelineVisibilityEnvValue("node_hostname"),
 						"name":      getPipelineVisibilityEnvValue("node_name"),
