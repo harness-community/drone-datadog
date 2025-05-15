@@ -21,7 +21,7 @@ type EnvConfig struct {
 
 var pipelineVisibilityEnvConfigs = map[string]EnvConfig{
 	"pipeline_end": {
-		EnvNames:     []string{"PLUGIN_BUILD_FINISHED", "DRONE_BUILD_FINISHED", "CI_BUILD_FINISHED"},
+		EnvNames:     []string{"PLUGIN_BUILD_FINISHED", "DRONE_STAGE_FINISHED", "CI_BUILD_FINISHED"},
 		DefaultValue: "",
 		IsRequired:   true,
 	},
