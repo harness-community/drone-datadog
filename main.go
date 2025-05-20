@@ -212,6 +212,20 @@ func main() {
 		log.Fatalf("parseConfig() err: %s", err)
 	}
 
+	if strings.ToLower(os.Getenv("PLUGIN_CI_VISIBILITY_TYPE")) == "pipeline" {
+		if err := ValidateRequiredEnvVars(); err != nil {
+			log.Fatalf("Required env validation failed: %v", err)
+			return
+		}
+		err := SendDatadogPipelineEvent(cfg)
+		if err != nil {
+			log.Printf("unable to pipeline ci visibility: %v", err)
+			return
+		}
+		log.Printf("pipeline ci visibility sent successfully")
+		return
+	}
+
 	if metrics, err := parseMetrics(); err == nil {
 		payload, err := json.Marshal(struct {
 			Series Metrics `json:"series"`

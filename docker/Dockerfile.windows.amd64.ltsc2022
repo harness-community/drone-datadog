@@ -1,0 +1,11 @@
+# escape=`
+
+FROM mcr.microsoft.com/windows/servercore:ltsc2022
+SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
+USER ContainerAdministrator
+
+ENV GODEBUG=netdns=go
+RUN mkdir /bin
+ADD release/windows/amd64/plugin C:/bin/plugin.exe
+
+ENTRYPOINT [ "C:\\bin\\plugin.exe" ]
